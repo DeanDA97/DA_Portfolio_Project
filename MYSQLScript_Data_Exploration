@@ -1,0 +1,118 @@
+-- SQL Project - Exploratory Data Analysis
+
+Select *
+From layoffs_staging2;
+
+-- figuring out date range
+
+Select MIN(`date`), Max(`date`)
+From layoffs_staging2;
+
+
+Select MAX(total_laid_off), Max(percentage_laid_off)
+From layoffs_staging2;
+
+-- Looking at specific things.
+
+Select *
+From layoffs_staging2
+Where percentage_laid_off = 1
+Order by funds_raised_millions DESC;
+
+
+Select company, SUM(total_laid_off)
+FROM layoffs_staging2
+Group by company
+Order by 2 Desc;
+
+
+Select industry, SUM(total_laid_off)
+FROM layoffs_staging2
+Group by industry
+Order by 2 Desc;
+
+
+Select country, SUM(total_laid_off)
+FROM layoffs_staging2
+Group by country
+Order by 2 Desc;
+
+Select stage, SUM(total_laid_off)
+FROM layoffs_staging2
+Group by stage
+Order by 2 Desc;
+
+-- Looking at layoffs by date
+
+Select YEAR(`date`), SUM(total_laid_off)
+FROM layoffs_staging2
+Group by Year(`date`)
+Order by 2 Desc;
+
+--
+
+Select Substring(`date`,1,7) AS `MONTH` , SUM(total_laid_off)
+From layoffs_staging2
+Where Substring(`date`,1,7)
+Group by `MONTH`
+Order by 1 ASC;
+
+-- Finding Rolling Total from start
+
+With Rolling_Total As
+(
+Select Substring(`date`,1,7) AS `MONTH` , SUM(total_laid_off) As total_off
+From layoffs_staging2
+Where Substring(`date`,1,7)
+Group by `MONTH`
+Order by 1 ASC
+)
+Select `Month`, total_off
+, Sum(total_off) Over(Order by `Month`) As rolling_total
+From Rolling_Total;
+
+-- Checking company's by year
+
+Select company, SUM(total_laid_off)
+FROM layoffs_staging2
+Group by company
+Order by 2 Desc;
+
+Select company, Year(`date`), SUM(total_laid_off)
+FROM layoffs_staging2
+Group by company, Year(`date`)
+Order by 3 Desc;
+
+-- Ordering by Company Rank each year
+
+With Company_Year (company, years, total_laid_off) AS
+(
+Select company, Year(`date`), SUM(total_laid_off)
+FROM layoffs_staging2
+Group by company, Year(`date`)
+), Company_Year_Rank AS
+(Select *, dense_rank () OVER (partition by years Order By total_laid_off DESC) AS Ranking
+From Company_Year
+Where years IS NOT NULL
+)
+Select *
+From Company_Year_Rank
+Where Ranking <=5
+;
+
+-- Ordering by Industry Rank each year
+
+With industry_year (industry, years, total_laid_off) AS
+(
+Select industry, Year(`date`), SUM(total_laid_off)
+FROM layoffs_staging2
+Group by industry, Year(`date`)
+), Industry_Year_Rank AS
+(Select *, dense_rank () OVER (partition by years Order By total_laid_off DESC) AS Ranking
+From Industry_Year
+Where years IS NOT NULL
+)
+Select *
+From Industry_Year_Rank
+Where Ranking <=5
+;
